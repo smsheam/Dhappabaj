@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { Trophy, Crown, RotateCcw, Users, Sparkles } from 'lucide-react';
 import { Player, RoundResult, Language, Theme } from '../types/game';
 import { GameTopBar } from './GameTopBar';
+import { PlayerAvatar } from './PlayerAvatar';
 import { sound } from '../utils/audio';
 
 interface GameOverScreenProps {
@@ -82,8 +83,13 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
       <div className="my-auto py-5 space-y-6">
         {/* Winner Hero Banner */}
         <div className="p-7 rounded-3xl bg-gradient-to-b from-amber-500/15 via-white dark:via-slate-900 to-white dark:to-slate-950 border border-amber-500/50 text-center shadow-xl relative overflow-hidden">
-          <div className="w-20 h-20 mx-auto rounded-3xl bg-amber-500 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/30 mb-3 animate-bounce">
-            <Trophy className="w-10 h-10 fill-slate-950" />
+          <div className="mx-auto mb-3">
+            <PlayerAvatar
+              avatar={winner?.avatar || '🕵️'}
+              color={winner?.avatarColor || 'bg-amber-500'}
+              size="xl"
+              className="mx-auto shadow-2xl animate-bounce"
+            />
           </div>
 
           <span className="text-xs text-amber-600 dark:text-amber-400 uppercase tracking-widest font-bold">
@@ -105,9 +111,13 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           {/* 2nd Place */}
           {sorted[1] && (
             <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-1 shadow-xs">
-              <div className="w-7 h-7 mx-auto rounded-full bg-slate-200 dark:bg-slate-300 text-slate-950 font-black text-xs flex items-center justify-center">
-                2nd
-              </div>
+              <PlayerAvatar
+                avatar={sorted[1].avatar || '🕵️'}
+                color={sorted[1].avatarColor || 'bg-slate-300'}
+                size="md"
+                badge={2}
+                className="mx-auto mb-1"
+              />
               <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{sorted[1].name}</p>
               <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                 {isEn ? sorted[1].titleEn : sorted[1].titleBn}
@@ -120,9 +130,13 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 
           {/* 1st Place Podium Center */}
           <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-t from-amber-500/15 to-white dark:to-slate-900 border border-amber-500/40 text-center space-y-1 -translate-y-2 shadow-md">
-            <div className="w-9 h-9 mx-auto rounded-full bg-amber-500 text-slate-950 font-black text-sm flex items-center justify-center shadow-xs">
-              <Crown className="w-5 h-5 fill-slate-950" />
-            </div>
+            <PlayerAvatar
+              avatar={winner?.avatar || '🕵️'}
+              color={winner?.avatarColor || 'bg-amber-500'}
+              size="lg"
+              badge="👑"
+              className="mx-auto mb-1 shadow-md"
+            />
             <p className="text-base font-black text-amber-600 dark:text-amber-400 truncate">{winner?.name}</p>
             <p className="text-[10px] text-amber-600/80 dark:text-amber-300/80 truncate">{winnerTitle}</p>
             <span className="text-sm font-mono text-slate-900 dark:text-white font-black block">
@@ -133,9 +147,13 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           {/* 3rd Place */}
           {sorted[2] && (
             <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-1 shadow-xs">
-              <div className="w-7 h-7 mx-auto rounded-full bg-amber-700 text-white font-black text-xs flex items-center justify-center">
-                3rd
-              </div>
+              <PlayerAvatar
+                avatar={sorted[2].avatar || '🕵️'}
+                color={sorted[2].avatarColor || 'bg-amber-700'}
+                size="md"
+                badge={3}
+                className="mx-auto mb-1"
+              />
               <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{sorted[2].name}</p>
               <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                 {isEn ? sorted[2].titleEn : sorted[2].titleBn}

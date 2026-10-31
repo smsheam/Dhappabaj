@@ -2,6 +2,7 @@ import React from 'react';
 import { Trophy, ArrowRight, Crown } from 'lucide-react';
 import { Player, RoundResult, Language, Theme } from '../types/game';
 import { GameTopBar } from './GameTopBar';
+import { PlayerAvatar } from './PlayerAvatar';
 import { sound } from '../utils/audio';
 
 interface ScoreboardScreenProps {
@@ -57,7 +58,7 @@ export const ScoreboardScreen: React.FC<ScoreboardScreenProps> = ({
         <div className="text-center mb-2">
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white flex items-center justify-center gap-2">
             <Trophy className="w-7 h-7 text-amber-500" />
-            <span>{isEn ? 'Current Standings' : 'চলতি স্কোরবোর্ড'}</span>
+            <span>{isEn ? 'Scoreboard' : 'স্কোরবোর্ড'}</span>
           </h2>
         </div>
 
@@ -78,7 +79,7 @@ export const ScoreboardScreen: React.FC<ScoreboardScreenProps> = ({
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center font-black font-mono text-sm ${
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center font-black font-mono text-sm shrink-0 ${
                     rank === 0
                       ? 'bg-amber-500 text-slate-950'
                       : rank === 1
@@ -88,8 +89,14 @@ export const ScoreboardScreen: React.FC<ScoreboardScreenProps> = ({
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                   }`}
                 >
-                  {rank === 0 ? <Crown className="w-5 h-5 fill-slate-950" /> : rank + 1}
+                  {rank === 0 ? <Crown className="w-4 h-4 fill-slate-950" /> : rank + 1}
                 </div>
+
+                <PlayerAvatar
+                  avatar={player.avatar || '🕵️'}
+                  color={player.avatarColor || 'bg-amber-500'}
+                  size="sm"
+                />
 
                 <div>
                   <div className="flex items-center gap-2">

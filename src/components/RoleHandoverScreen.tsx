@@ -1,6 +1,7 @@
 import React from 'react';
-import { Eye, Shield, ArrowRight } from 'lucide-react';
+import { Eye, ArrowRight } from 'lucide-react';
 import { Player, Language, Theme } from '../types/game';
+import { PlayerAvatar } from './PlayerAvatar';
 import { sound } from '../utils/audio';
 
 interface RoleHandoverScreenProps {
@@ -29,7 +30,7 @@ export const RoleHandoverScreen: React.FC<RoleHandoverScreenProps> = ({
       {/* Top indicator */}
       <div className="text-center space-y-1">
         <span className="text-xs uppercase tracking-widest text-amber-600 dark:text-amber-400 font-mono font-bold">
-          {isEn ? `Round ${roundNumber} · Pass & Play` : `রাউন্ড ${roundNumber} · কার্ড বিতরণ`}
+          {isEn ? `Round ${roundNumber} · Word Distribution` : `রাউন্ড ${roundNumber} · কার্ড বিতরণ`}
         </span>
         <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
           <span>{isEn ? 'Player' : 'খেলোয়াড়'}</span>
@@ -40,12 +41,19 @@ export const RoleHandoverScreen: React.FC<RoleHandoverScreenProps> = ({
 
       {/* Main Privacy Shield Card */}
       <div className="my-auto py-8 px-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center shadow-xl relative overflow-hidden">
-        <div className="w-20 h-20 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center mb-5 shadow-xs">
-          <Shield className="w-10 h-10 text-amber-500" />
+        <div className="mb-4">
+          <PlayerAvatar
+            avatar={player.avatar || '🕵️'}
+            color={player.avatarColor || 'bg-amber-500'}
+            size="xl"
+            badge={playerIndex + 1}
+            className="mx-auto shadow-lg"
+          />
         </div>
 
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider mb-2">
-          {isEn ? 'Pass device to' : 'মোবাইলটি হস্তান্তর করুন'}
+        {/* Replaced 'মোবাইলটি হস্তান্তর করুন' with 'আপনি' as requested */}
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mb-1.5">
+          {isEn ? 'You' : 'আপনি'}
         </p>
 
         <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -63,7 +71,7 @@ export const RoleHandoverScreen: React.FC<RoleHandoverScreenProps> = ({
         </div>
       </div>
 
-      {/* Action Button */}
+      {/* Action Button: Changed to 'শব্দটি উন্মোচন করুন' as requested */}
       <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
         <button
           type="button"
@@ -73,7 +81,7 @@ export const RoleHandoverScreen: React.FC<RoleHandoverScreenProps> = ({
           }}
           className="w-full py-4 px-6 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-lg shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer"
         >
-          <span>{isEn ? `I am ${player.name}, Reveal Card` : `আমি ${player.name}, কার্ড উন্মোচন করুন`}</span>
+          <span>{isEn ? 'Reveal the Word' : 'শব্দটি উন্মোচন করুন'}</span>
           <ArrowRight className="w-5 h-5" />
         </button>
       </div>

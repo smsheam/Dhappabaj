@@ -109,6 +109,7 @@ export function calculateRoundScores({
       playerName: player.name,
       playerTitleBn: player.titleBn,
       playerTitleEn: player.titleEn,
+      playerAvatar: player.avatar,
       isImposter,
       votedForId,
       votesReceived,

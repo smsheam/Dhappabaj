@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Vote, Check, ArrowRight } from 'lucide-react';
 import { Player, Language, Theme } from '../types/game';
 import { GameTopBar } from './GameTopBar';
+import { PlayerAvatar } from './PlayerAvatar';
 import { sound } from '../utils/audio';
 
 interface VotingScreenProps {
@@ -153,12 +154,12 @@ export const VotingScreen: React.FC<VotingScreenProps> = ({
                       : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center justify-between text-xs mb-0.5">
-                    <span className="font-mono text-[10px] text-slate-400">#{idx + 1}</span>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-base">{p.avatar || '🕵️'}</span>
                     {hasVoted ? (
                       <Check className="w-3.5 h-3.5 text-emerald-500" />
                     ) : (
-                      <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+                      <span className="font-mono text-[10px] text-slate-400">#{idx + 1}</span>
                     )}
                   </div>
                   <p className="text-xs font-bold truncate text-slate-900 dark:text-white">{p.name}</p>
@@ -176,6 +177,15 @@ export const VotingScreen: React.FC<VotingScreenProps> = ({
             <span className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 font-mono">
               {isEn ? 'Pass & Play Secret Vote' : 'পাস-অ্যান্ড-প্লে গোপন ভোট'}
             </span>
+            <div className="mb-2">
+              <PlayerAvatar
+                avatar={currentVoter?.avatar || '🕵️'}
+                color={currentVoter?.avatarColor || 'bg-amber-500'}
+                size="lg"
+                badge={activeVoterIndex + 1}
+                className="mx-auto shadow-md"
+              />
+            </div>
             <h3 className="text-3xl font-black text-slate-900 dark:text-white">{currentVoter?.name}</h3>
             <span className="text-xs px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-amber-600 dark:text-amber-300 font-bold border border-slate-200 dark:border-slate-700 inline-block">
               {currentVoterTitle}
@@ -230,13 +240,11 @@ export const VotingScreen: React.FC<VotingScreenProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <div
-                        className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
-                          isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                        }`}
-                      >
-                        {suspect.name.charAt(0)}
-                      </div>
+                      <PlayerAvatar
+                        avatar={suspect.avatar || '🕵️'}
+                        color={suspect.avatarColor || 'bg-amber-500'}
+                        size="sm"
+                      />
                       <div>
                         <span className="text-sm font-bold block">{suspect.name}</span>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400">

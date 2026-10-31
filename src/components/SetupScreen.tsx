@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Users, UserX, Clock, Play, Check, Shuffle } from 'lucide-react';
+import { Users, UserX, Clock, Check, Shuffle, X, Smile } from 'lucide-react';
 import { CategoryId, Language, Theme } from '../types/game';
 import { CATEGORIES } from '../data/categories';
-import { generatePlayerTitles, FIRST_PLAYER_TITLE, TitlePair } from '../data/titles';
+import { generatePlayerTitles, SCENE_PACKS, ScenePack, TitlePair } from '../data/titles';
+import { PLAYER_AVATARS, DEFAULT_AVATARS_BY_INDEX } from '../data/avatars';
+import { PlayerAvatar } from './PlayerAvatar';
 import { GameTopBar } from './GameTopBar';
 import { sound } from '../utils/audio';
 
@@ -47,12 +49,12 @@ const FUN_NAMES_EN = [
 ];
 
 const AVATAR_COLORS = [
-  'bg-rose-500',
   'bg-amber-500',
+  'bg-rose-500',
   'bg-emerald-500',
   'bg-sky-500',
-  'bg-indigo-500',
   'bg-purple-500',
+  'bg-indigo-500',
   'bg-pink-500',
   'bg-teal-500',
   'bg-orange-500',
@@ -61,7 +63,7 @@ const AVATAR_COLORS = [
 
 interface SetupScreenProps {
   onStartGame: (
-    playersData: { name: string; titleBn: string; titleEn: string }[],
+    playersData: { name: string; titleBn: string; titleEn: string; avatar: string }[],
     imposterCount: 1 | 2 | 3,
     selectedCategories: CategoryId[],
     timerSeconds: number,
@@ -92,7 +94,14 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
   const [playerNames, setPlayerNames] = useState<string[]>(
     isEn ? DEFAULT_NAMES_EN.slice(0, 5) : DEFAULT_NAMES_BN.slice(0, 5)
   );
-  const [playerTitles, setPlayerTitles] = useState<TitlePair[]>(generatePlayerTitles(5));
+  const [playerAvatars, setPlayerAvatars] = useState<string[]>(
+    DEFAULT_AVATARS_BY_INDEX.slice(0, 5)
+  );
+  const [currentScene, setCurrentScene] = useState<ScenePack>(() => SCENE_PACKS[0]);
+  const [playerTitles, setPlayerTitles] = useState<TitlePair[]>(() => generatePlayerTitles(5, SCENE_PACKS[0].id).titles);
+
+  // Avatar picker modal state
+  const [editingAvatarIndex, setEditingAvatarIndex] = useState<number | null>(null);
 
   const [selectedCategories, setSelectedCategories] = useState<CategoryId[]>([
     'food',
@@ -111,24 +120,37 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 
   const maxAllowedImposters = getMaxImposters(playerCount);
 
+  const handleSwitchScene = () => {
+    sound.playClick();
+    const currentIndex = SCENE_PACKS.findIndex((s) => s.id === currentScene.id);
+    const nextScene = SCENE_PACKS[(currentIndex + 1) % SCENE_PACKS.length];
+    setCurrentScene(nextScene);
+    const { titles } = generatePlayerTitles(playerCount, nextScene.id);
+    setPlayerTitles(titles);
+  };
+
   const handlePlayerCountChange = (count: number) => {
     sound.playClick();
     setPlayerCount(count);
 
     if (count > playerNames.length) {
       const pool = isEn ? DEFAULT_NAMES_EN : DEFAULT_NAMES_BN;
-      const added: string[] = [];
+      const addedNames: string[] = [];
+      const addedAvatars: string[] = [];
+
       for (let i = playerNames.length; i < count; i++) {
-        added.push(pool[i] || (isEn ? `Player ${i + 1}` : `খেলোয়াড় ${i + 1}`));
+        addedNames.push(pool[i] || (isEn ? `Player ${i + 1}` : `খেলোয়াড় ${i + 1}`));
+        addedAvatars.push(DEFAULT_AVATARS_BY_INDEX[i % DEFAULT_AVATARS_BY_INDEX.length]);
       }
-      setPlayerNames([...playerNames, ...added]);
+      setPlayerNames([...playerNames, ...addedNames]);
+      setPlayerAvatars([...playerAvatars, ...addedAvatars]);
     } else {
       setPlayerNames(playerNames.slice(0, count));
+      setPlayerAvatars(playerAvatars.slice(0, count));
     }
 
-    const newTitles = generatePlayerTitles(count);
-    newTitles[0] = FIRST_PLAYER_TITLE;
-    setPlayerTitles(newTitles);
+    const { titles } = generatePlayerTitles(count, currentScene.id);
+    setPlayerTitles(titles);
 
     const maxImp = getMaxImposters(count);
     if (imposterCount > maxImp) {
@@ -142,12 +164,31 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
     setPlayerNames(updated);
   };
 
+  const handleAvatarSelect = (emoji: string) => {
+    sound.playClick();
+    if (editingAvatarIndex !== null) {
+      const updated = [...playerAvatars];
+      updated[editingAvatarIndex] = emoji;
+      setPlayerAvatars(updated);
+      setEditingAvatarIndex(null);
+    }
+  };
+
   const handleRandomizeNamesAndTitles = () => {
     sound.playClick();
     const namePool = isEn ? FUN_NAMES_EN : FUN_NAMES_BN;
-    const shuffled = [...namePool].sort(() => 0.5 - Math.random());
-    setPlayerNames(shuffled.slice(0, playerCount));
-    setPlayerTitles(generatePlayerTitles(playerCount));
+    const shuffledNames = [...namePool].sort(() => 0.5 - Math.random());
+    setPlayerNames(shuffledNames.slice(0, playerCount));
+
+    // Also pick a fresh random scene pack!
+    const randomScene = SCENE_PACKS[Math.floor(Math.random() * SCENE_PACKS.length)];
+    setCurrentScene(randomScene);
+    const { titles } = generatePlayerTitles(playerCount, randomScene.id);
+    setPlayerTitles(titles);
+
+    // Shuffle avatars
+    const shuffledAvatars = [...PLAYER_AVATARS.map((a) => a.emoji)].sort(() => 0.5 - Math.random());
+    setPlayerAvatars(shuffledAvatars.slice(0, playerCount));
   };
 
   const toggleCategory = (catId: CategoryId) => {
@@ -165,8 +206,9 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
     sound.playCardFlip();
     const playersData = playerNames.map((n, i) => ({
       name: n.trim() ? n.trim() : isEn ? `Player ${i + 1}` : `খেলোয়াড় ${i + 1}`,
-      titleBn: playerTitles[i]?.bn || FIRST_PLAYER_TITLE.bn,
-      titleEn: playerTitles[i]?.en || FIRST_PLAYER_TITLE.en,
+      titleBn: playerTitles[i]?.bn || currentScene.firstPlayerTitle.bn,
+      titleEn: playerTitles[i]?.en || currentScene.firstPlayerTitle.en,
+      avatar: playerAvatars[i] || DEFAULT_AVATARS_BY_INDEX[i % DEFAULT_AVATARS_BY_INDEX.length] || '🕵️',
     }));
     onStartGame(playersData, imposterCount, selectedCategories, timerSeconds, votingStyle);
   };
@@ -263,39 +305,68 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
           </div>
         </div>
 
-        {/* Section 2: Player Names & Titles */}
+        {/* Section 2: Player Names, Titles & Custom Avatars */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-bold text-slate-800 dark:text-slate-200">
-              {isEn ? 'Players & Roles' : 'খেলোয়াড়দের নাম ও পদবী'}
-            </label>
-            <button
-              type="button"
-              onClick={handleRandomizeNamesAndTitles}
-              className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
-            >
-              <Shuffle className="w-3.5 h-3.5" />
-              <span>{isEn ? 'Randomize' : 'র‍্যান্ডম নাম ও পদবী'}</span>
-            </button>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  {isEn ? 'Players & Roles' : 'খেলোয়াড় ও চরিত্র পদবী'}
+                </label>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                  <span>{currentScene.icon}</span>
+                  <span>{isEn ? currentScene.nameEn : currentScene.nameBn}</span>
+                </div>
+              </div>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                {isEn ? 'All player roles belong to this common scene' : 'সকল খেলোয়াড় এই একই পরিবেশের চরিত্রে অভিনয় করবেন'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSwitchScene}
+                className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-500 flex items-center gap-1 font-semibold cursor-pointer"
+              >
+                <span>{isEn ? 'Change Scene ↻' : 'থিম পরিবর্তন ↻'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleRandomizeNamesAndTitles}
+                className="text-xs text-slate-600 dark:text-slate-400 hover:text-amber-500 flex items-center gap-1 font-semibold cursor-pointer"
+              >
+                <Shuffle className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Randomize' : 'র‍্যান্ডম করুন'}</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 mt-3">
             {playerNames.map((name, index) => {
               const currentTitle = isEn ? playerTitles[index]?.en : playerTitles[index]?.bn;
+              const avatar = playerAvatars[index] || '🕵️';
+              const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
 
               return (
                 <div
                   key={index}
-                  className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 transition-colors space-y-1"
+                  className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 transition-colors space-y-1.5"
                 >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-6 h-6 rounded-full ${
-                        AVATAR_COLORS[index % AVATAR_COLORS.length]
-                      } text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0`}
-                    >
-                      {index + 1}
-                    </div>
+                  <div className="flex items-center gap-2.5">
+                    {/* Interactive Avatar button */}
+                    <PlayerAvatar
+                      avatar={avatar}
+                      color={color}
+                      size="sm"
+                      badge={index + 1}
+                      onClick={() => {
+                        sound.playClick();
+                        setEditingAvatarIndex(index);
+                      }}
+                      title={isEn ? 'Change Avatar' : 'অবতার পরিবর্তন করুন'}
+                    />
+
                     <input
                       type="text"
                       value={name}
@@ -309,7 +380,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                       className="w-full bg-transparent text-sm font-semibold text-slate-900 dark:text-slate-100 focus:outline-none"
                     />
                   </div>
-                  <div className="pl-8 text-xs font-semibold text-amber-600 dark:text-amber-400 truncate">
+                  <div className="pl-10 text-xs font-semibold text-amber-600 dark:text-amber-400 truncate">
                     {currentTitle || (isEn ? 'Citizen' : 'নাগরিক')}
                   </div>
                 </div>
@@ -318,7 +389,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
           </div>
         </div>
 
-        {/* Section 3: Word Categories (No counts) */}
+        {/* Section 3: Word Categories */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
           <label className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-2.5 block">
             {isEn ? 'Categories' : 'শব্দ ক্যাটাগরি'}
@@ -355,7 +426,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
           <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <label className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-2">
               <Clock className="w-4 h-4 text-sky-500" />
-              <span>{isEn ? 'Timer' : 'আলোচনার সময়'}</span>
+              <span>{isEn ? 'Discussion Timer' : 'আলোচনার সময়'}</span>
             </label>
             <div className="grid grid-cols-4 gap-1.5">
               {[
@@ -371,9 +442,9 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                     sound.playClick();
                     setTimerSeconds(t.value);
                   }}
-                  className={`py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                  className={`py-2 rounded-xl text-xs font-bold font-mono transition-colors cursor-pointer ${
                     timerSeconds === t.value
-                      ? 'bg-sky-500 text-white font-bold shadow-xs'
+                      ? 'bg-sky-500 text-white shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
@@ -383,10 +454,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
             </div>
           </div>
 
-          {/* Voting Style */}
+          {/* Voting System */}
           <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <label className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-2 block">
-              {isEn ? 'Voting Style' : 'ভোট গ্রহণের পদ্ধতি'}
+              {isEn ? 'Voting Style' : 'ভোট নেওয়ার পদ্ধতি'}
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -395,13 +466,14 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                   sound.playClick();
                   setVotingStyle('host_input');
                 }}
-                className={`p-2 rounded-xl text-xs font-medium text-left transition-all cursor-pointer ${
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                   votingStyle === 'host_input'
-                    ? 'bg-amber-500/15 border border-amber-500 text-amber-700 dark:text-amber-300 font-bold'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-transparent'
+                    ? 'bg-rose-500/10 border-rose-500 text-rose-700 dark:text-rose-400 font-bold'
+                    : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400'
                 }`}
               >
-                <span>{isEn ? 'Host Input' : '১ম ব্যক্তি ইনপুট'}</span>
+                <div className="text-xs font-bold">{isEn ? 'Host Input' : 'প্রথম প্লেয়ার ইনপুট'}</div>
+                <div className="text-[10px] opacity-75">{isEn ? 'One device, quick' : 'হোস্ট সবার ভোট ইনপুট দেবে'}</div>
               </button>
 
               <button
@@ -410,13 +482,14 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                   sound.playClick();
                   setVotingStyle('pass_and_play');
                 }}
-                className={`p-2 rounded-xl text-xs font-medium text-left transition-all cursor-pointer ${
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                   votingStyle === 'pass_and_play'
-                    ? 'bg-amber-500/15 border border-amber-500 text-amber-700 dark:text-amber-300 font-bold'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-transparent'
+                    ? 'bg-rose-500/10 border-rose-500 text-rose-700 dark:text-rose-400 font-bold'
+                    : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400'
                 }`}
               >
-                <span>{isEn ? 'Pass & Play' : 'পাস-অ্যান্ড-প্লে'}</span>
+                <div className="text-xs font-bold">{isEn ? 'Pass & Play' : 'পাস-অ্যান্ড-প্লে'}</div>
+                <div className="text-[10px] opacity-75">{isEn ? 'Secret individual vote' : 'প্রত্যেকে গোপন ভোট দেবে'}</div>
               </button>
             </div>
           </div>
@@ -426,13 +499,60 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
         <div className="pt-2">
           <button
             type="submit"
-            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-lg shadow-xl shadow-amber-500/20 flex items-center justify-center gap-3 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-lg shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer"
           >
-            <Play className="w-5 h-5 fill-slate-950" />
-            <span>{isEn ? 'Start Match' : 'খেলা শুরু করুন'}</span>
+            <span>{isEn ? 'Start 1st Round' : 'প্রথম রাউন্ড শুরু করুন'}</span>
           </button>
         </div>
       </form>
+
+      {/* Avatar Selection Modal */}
+      {editingAvatarIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Smile className="w-5 h-5 text-amber-500" />
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                  {isEn
+                    ? `Choose Avatar for ${playerNames[editingAvatarIndex]}`
+                    : `${playerNames[editingAvatarIndex]}-এর অবতার নির্বাচন`}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingAvatarIndex(null)}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-4 gap-3 max-h-72 overflow-y-auto p-1">
+              {PLAYER_AVATARS.map((opt) => {
+                const isSelected = playerAvatars[editingAvatarIndex] === opt.emoji;
+                return (
+                  <button
+                    type="button"
+                    key={opt.id}
+                    onClick={() => handleAvatarSelect(opt.emoji)}
+                    className={`p-3 rounded-2xl border text-center flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-500/20 border-amber-500 scale-105 shadow-md'
+                        : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-amber-400/50'
+                    }`}
+                  >
+                    <span className="text-3xl">{opt.emoji}</span>
+                    <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 truncate w-full">
+                      {isEn ? opt.labelEn : opt.labelBn}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

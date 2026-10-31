@@ -31,6 +31,7 @@ export interface Player {
   titleEn: string;
   score: number;
   avatarColor: string;
+  avatar: string;
   isImposter?: boolean;
 }
 
@@ -39,6 +40,7 @@ export interface RoundScoreDetail {
   playerName: string;
   playerTitleBn: string;
   playerTitleEn: string;
+  playerAvatar?: string;
   isImposter: boolean;
   votedForId: string | null;
   votesReceived: number;

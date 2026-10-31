@@ -134,7 +134,7 @@ class SoundManager {
     }
   }
 
-  // Loud, dramatic suspense chord when imposter is revealed
+  // Terrifying, dramatic horror suspense chord when imposter is revealed
   public playSuspenseReveal() {
     if (this.isMuted) return;
     try {
@@ -142,26 +142,44 @@ class SoundManager {
       if (!ctx || !this.masterGain) return;
       const now = ctx.currentTime;
 
-      // Heavy ominous chord with detuned oscillators
-      const freqs = [65.41, 130.81, 155.56, 196.0, 246.94]; // C2, C3, Eb3, G3, B3 (Minor-major 7th)
-      freqs.forEach((freq) => {
+      // 1. Deep Sub-Bass Impact Boom (Earth-shaking drop)
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(110, now);
+      subOsc.frequency.exponentialRampToValueAtTime(32, now + 0.5);
+
+      subGain.gain.setValueAtTime(0.7, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+      subOsc.connect(subGain);
+      subGain.connect(this.masterGain);
+      subOsc.start(now);
+      subOsc.stop(now + 1.2);
+
+      // 2. Dissonant Horror Stinger Chords (Minor 2nd / Tritone cluster: C, C#, Eb, F#)
+      const scaryFreqs = [130.81, 138.59, 155.56, 185.0, 261.63, 277.18];
+      scaryFreqs.forEach((freq, idx) => {
         if (!ctx || !this.masterGain) return;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = 'sawtooth';
+        osc.type = idx % 2 === 0 ? 'sawtooth' : 'triangle';
         osc.frequency.setValueAtTime(freq, now);
 
-        gain.gain.setValueAtTime(0.35, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+        // Add slight vibrato/pitch bend for creepy suspense
+        osc.frequency.linearRampToValueAtTime(freq * 0.96, now + 1.8);
+
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
 
         osc.connect(gain);
         gain.connect(this.masterGain);
 
         osc.start(now);
-        osc.stop(now + 1.6);
+        osc.stop(now + 1.8);
       });
     } catch {
-      // Ignore
+      // AudioContext safeguard
     }
   }
 

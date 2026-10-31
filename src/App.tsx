@@ -86,7 +86,7 @@ export default function App() {
 
   // Start new game from setup
   const handleStartGame = (
-    playersData: { name: string; titleBn: string; titleEn: string }[],
+    playersData: { name: string; titleBn: string; titleEn: string; avatar: string }[],
     imposterCount: 1 | 2 | 3,
     selectedCategories: CategoryId[],
     timerSeconds: number,
@@ -99,6 +99,7 @@ export default function App() {
       titleEn: data.titleEn,
       score: 0,
       avatarColor: AVATAR_COLORS[index % AVATAR_COLORS.length],
+      avatar: data.avatar || '🕵️',
     }));
 
     setPlayers(initializedPlayers);

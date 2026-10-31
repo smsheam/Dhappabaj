@@ -43,7 +43,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, lang })
               <div>
                 <h4 className="font-bold text-slate-900 dark:text-white">1. Game Setup</h4>
                 <p className="mt-1">
-                  Played with 3–10 players. Player 1 is always the <strong>Prime Minister 🏛️</strong>, while other players get hilarious titles (Police, Doctor, Thief, etc.). Choose 1 to 3 Imposters based on player count. Total rounds equal player count.
+                  Played with 3–10 players. All players share a common themed scene (e.g. Cabinet Ministry, Police Station, Hospital, Courtroom, Airport, or Newsroom) with Player 1 as the scene chief. Choose 1 to 3 Imposters based on player count. Total rounds equal player count.
                 </p>
               </div>
 
@@ -117,7 +117,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, lang })
               <div>
                 <h4 className="font-bold text-slate-900 dark:text-white">১. গেম সেটআপ (Game Setup)</h4>
                 <p className="mt-1">
-                  ৩–১০ জন খেলোয়াড় নিয়ে খেলা হবে। ১ম খেলোয়াড় প্রধানমন্ত্রী 🏛️ এবং অন্যরা মজার পদবী (যেমন পুলিশ, ডাক্তার, চোর, পাতি নেতা ইত্যাদি) পাবেন। খেলোয়াড় সংখ্যা অনুযায়ী ১–৩ জন Imposter এবং মোট রাউন্ড খেলোয়াড় সংখ্যার সমান।
+                  ৩–১০ জন খেলোয়াড় নিয়ে খেলা হবে। সব খেলোয়াড় একটি নির্দিষ্ট থিম সিনারিও (যেমন মন্ত্রী পরিষদ, পুলিশ স্টেশন, হাসপাতাল, আদালত, এয়ারপোর্ট বা নিউজরুম)-এর অন্তর্ভুক্ত চরিত্রে অংশ নেবেন এবং ১ম খেলোয়াড় হবেন প্রধান। খেলোয়াড় সংখ্যা অনুযায়ী ১–৩ জন Imposter এবং মোট রাউন্ড খেলোয়াড় সংখ্যার সমান।
                 </p>
               </div>
 
