@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, UserX, Clock, Check, Shuffle, X, Smile } from 'lucide-react';
+import { Users, UserX, Clock, Check, Shuffle, X, Smile, RotateCcw } from 'lucide-react';
 import { CategoryId, Language, Theme } from '../types/game';
 import { CATEGORIES } from '../data/categories';
 import { generatePlayerTitles, SCENE_PACKS, ScenePack, TitlePair } from '../data/titles';
@@ -7,6 +7,14 @@ import { PLAYER_AVATARS, DEFAULT_AVATARS_BY_INDEX } from '../data/avatars';
 import { PlayerAvatar } from './PlayerAvatar';
 import { GameTopBar } from './GameTopBar';
 import { sound } from '../utils/audio';
+
+export function calculateBestRounds(players: number, imposters: number): number {
+  // Strategy requested by user:
+  // "round number = player number, seems too long game. Modify round number with best strategy, like at least 3 round or round number = player number by imposter number (upper round number) etc."
+  const upperRatio = Math.ceil(players / Math.max(imposters, 1));
+  // At least 3 rounds, capped between 3 and 5 for crisp, optimal gameplay
+  return Math.max(3, Math.min(5, upperRatio));
+}
 
 const DEFAULT_NAMES_BN = [
   'তাহসান',
@@ -67,7 +75,8 @@ interface SetupScreenProps {
     imposterCount: 1 | 2 | 3,
     selectedCategories: CategoryId[],
     timerSeconds: number,
-    votingStyle: 'host_input' | 'pass_and_play'
+    votingStyle: 'host_input' | 'pass_and_play',
+    totalRounds: number
   ) => void;
   lang: Language;
   onToggleLang: () => void;
@@ -91,6 +100,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
   const isEn = lang === 'en';
   const [playerCount, setPlayerCount] = useState<number>(5);
   const [imposterCount, setImposterCount] = useState<1 | 2 | 3>(1);
+  const [totalRounds, setTotalRounds] = useState<number>(() => calculateBestRounds(5, 1));
   const [playerNames, setPlayerNames] = useState<string[]>(
     isEn ? DEFAULT_NAMES_EN.slice(0, 5) : DEFAULT_NAMES_BN.slice(0, 5)
   );
@@ -153,9 +163,11 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
     setPlayerTitles(titles);
 
     const maxImp = getMaxImposters(count);
+    const newImp = imposterCount > maxImp ? maxImp : imposterCount;
     if (imposterCount > maxImp) {
       setImposterCount(maxImp);
     }
+    setTotalRounds(calculateBestRounds(count, newImp));
   };
 
   const handleNameChange = (index: number, newName: string) => {
@@ -210,7 +222,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
       titleEn: playerTitles[i]?.en || currentScene.firstPlayerTitle.en,
       avatar: playerAvatars[i] || DEFAULT_AVATARS_BY_INDEX[i % DEFAULT_AVATARS_BY_INDEX.length] || '🕵️',
     }));
-    onStartGame(playersData, imposterCount, selectedCategories, timerSeconds, votingStyle);
+    onStartGame(playersData, imposterCount, selectedCategories, timerSeconds, votingStyle, totalRounds);
   };
 
   return (
@@ -227,21 +239,18 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 
       {/* Setup Form */}
       <form onSubmit={handleSubmit} className="my-auto py-5 space-y-5">
-        {/* Section 1: Player count & Imposter count */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Section 1: Player count, Imposter count, and Rounds */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Player Count */}
           <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                 <Users className="w-4 h-4 text-amber-500" />
-                <span>{isEn ? `Players (${playerCount})` : `খেলোয়াড় সংখ্যা (${playerCount} জন)`}</span>
+                <span>{isEn ? `Players (${playerCount})` : `খেলোয়াড় (${playerCount} জন)`}</span>
               </label>
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                {isEn ? `${playerCount} Rounds` : `${playerCount}টি রাউন্ড`}
-              </span>
             </div>
 
-            <div className="grid grid-cols-8 gap-1.5">
+            <div className="grid grid-cols-4 gap-1.5">
               {[3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                 <button
                   type="button"
@@ -264,14 +273,14 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                 <UserX className="w-4 h-4 text-rose-500" />
-                <span>{isEn ? 'Imposters' : 'ধাপ্পাবাজ সংখ্যা'}</span>
+                <span>{isEn ? 'Imposters' : 'ধাপ্পাবাজ'}</span>
               </label>
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 {playerCount <= 4
-                  ? isEn ? 'Max 1' : 'সর্বোচ্চ ১ জন'
+                  ? isEn ? 'Max 1' : 'সর্বোচ্চ ১'
                   : playerCount <= 7
-                  ? isEn ? 'Max 2' : 'সর্বোচ্চ ২ জন'
-                  : isEn ? 'Max 3' : 'সর্বোচ্চ ৩ জন'}
+                  ? isEn ? 'Max 2' : 'সর্বোচ্চ ২'
+                  : isEn ? 'Max 3' : 'সর্বোচ্চ ৩'}
               </span>
             </div>
 
@@ -287,7 +296,9 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                     disabled={!isAllowed}
                     onClick={() => {
                       sound.playClick();
-                      setImposterCount(num as 1 | 2 | 3);
+                      const nextImp = num as 1 | 2 | 3;
+                      setImposterCount(nextImp);
+                      setTotalRounds(calculateBestRounds(playerCount, nextImp));
                     }}
                     className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold flex flex-col items-center justify-center transition-all ${
                       isSelected
@@ -301,6 +312,39 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Total Rounds */}
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-emerald-500" />
+                <span>{isEn ? `Rounds (${totalRounds})` : `রাউন্ড সংখ্যা (${totalRounds})`}</span>
+              </label>
+              <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                {isEn ? 'Min 3' : 'কমপক্ষে ৩'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-4 gap-1.5">
+              {[3, 4, 5, 6].map((num) => (
+                <button
+                  type="button"
+                  key={num}
+                  onClick={() => {
+                    sound.playClick();
+                    setTotalRounds(num);
+                  }}
+                  className={`py-2 rounded-xl text-xs sm:text-sm font-bold font-mono transition-all cursor-pointer ${
+                    totalRounds === num
+                      ? 'bg-emerald-500 text-slate-950 shadow-md scale-105'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {num}
+                </button>
+              ))}
             </div>
           </div>
         </div>

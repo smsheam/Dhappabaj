@@ -4,6 +4,7 @@ import { IntroScreen } from './components/IntroScreen';
 import { SetupScreen } from './components/SetupScreen';
 import { RoleHandoverScreen } from './components/RoleHandoverScreen';
 import { RoleCardScreen } from './components/RoleCardScreen';
+import { ClueSpeakingScreen } from './components/ClueSpeakingScreen';
 import { DiscussionScreen } from './components/DiscussionScreen';
 import { VotingScreen } from './components/VotingScreen';
 import { RevealScreen } from './components/RevealScreen';
@@ -13,6 +14,7 @@ import { RulesModal } from './components/RulesModal';
 import { pickRandomWord } from './data/words';
 import { calculateRoundScores } from './utils/scoring';
 import { sound } from './utils/audio';
+import { preloadWordImage } from './utils/wordImageService';
 
 const AVATAR_COLORS = [
   'bg-rose-500',
@@ -90,7 +92,8 @@ export default function App() {
     imposterCount: 1 | 2 | 3,
     selectedCategories: CategoryId[],
     timerSeconds: number,
-    votingStyle: 'host_input' | 'pass_and_play'
+    votingStyle: 'host_input' | 'pass_and_play',
+    selectedTotalRounds: number
   ) => {
     const initializedPlayers: Player[] = playersData.map((data, index) => ({
       id: `p-${index + 1}-${Date.now()}`,
@@ -113,7 +116,7 @@ export default function App() {
     });
 
     setCurrentRound(1);
-    setTotalRounds(initializedPlayers.length);
+    setTotalRounds(selectedTotalRounds);
     setUsedWordIds([]);
     setRoundResults([]);
     setLastRoundResult(null);
@@ -133,6 +136,10 @@ export default function App() {
     const word = pickRandomWord(prevUsedIds, categories);
     setCurrentWord(word);
     setUsedWordIds([...prevUsedIds, word.id]);
+
+    // Preload image for citizens in the background
+    preloadWordImage(word.wordBn);
+    preloadWordImage(word.wordEn);
 
     // Assign random imposter(s)
     const shuffledPlayerIds = [...currentPlayers.map((p) => p.id)].sort(() => 0.5 - Math.random());
@@ -155,8 +162,14 @@ export default function App() {
       setPhase('ROLE_HANDOVER');
     } else {
       sound.playClick();
-      setPhase('DISCUSSION');
+      // Transition to clue speaking stage before discussion
+      setPhase('CLUE_SPEAKING');
     }
+  };
+
+  const handleProceedToDiscussion = () => {
+    sound.playClick();
+    setPhase('DISCUSSION');
   };
 
   const handleProceedToVoting = () => {
@@ -309,6 +322,22 @@ export default function App() {
           onNextPlayer={handleNextPlayerCard}
           lang={lang}
           theme={theme}
+        />
+      )}
+
+      {phase === 'CLUE_SPEAKING' && (
+        <ClueSpeakingScreen
+          players={players}
+          roundNumber={currentRound}
+          totalRounds={totalRounds}
+          onProceedToDiscussion={handleProceedToDiscussion}
+          lang={lang}
+          onToggleLang={handleToggleLang}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          isMuted={isMuted}
+          onToggleMute={handleToggleMute}
+          onOpenRules={() => setIsRulesOpen(true)}
         />
       )}
 

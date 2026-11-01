@@ -62,6 +62,7 @@ export type GamePhase =
   | 'SETUP'
   | 'ROLE_HANDOVER'
   | 'ROLE_REVEAL'
+  | 'CLUE_SPEAKING'
   | 'DISCUSSION'
   | 'VOTING'
   | 'ROUND_REVEAL'
@@ -71,6 +72,7 @@ export type GamePhase =
 export interface GameSettings {
   playerCount: number;
   imposterCount: 1 | 2 | 3;
+  totalRounds: number; // Configured or optimal rounds (at least 3)
   timerSeconds: number; // 0 for unlimited, or 60, 90, 120
   votingStyle: 'host_input' | 'pass_and_play';
   allowCategorySelection: boolean;

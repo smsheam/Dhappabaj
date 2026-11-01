@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff, ArrowRight, Image as ImageIcon } from 'lucide-react';
 import { Player, WordItem, Language, Theme } from '../types/game';
 import { getHardHint, getShortExplanation } from '../utils/hintHelper';
+import { getWordImageUrl } from '../utils/wordImageService';
 import { sound } from '../utils/audio';
 import { PlayerAvatar } from './PlayerAvatar';
 
@@ -27,6 +28,23 @@ export const RoleCardScreen: React.FC<RoleCardScreenProps> = ({
 }) => {
   const isEn = lang === 'en';
   const [isRevealed, setIsRevealed] = useState<boolean>(true);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState<boolean>(!isImposter);
+
+  useEffect(() => {
+    if (isImposter) return;
+    let isMounted = true;
+    setImageLoading(true);
+    getWordImageUrl(word).then((url) => {
+      if (isMounted) {
+        setImageUrl(url);
+        setImageLoading(false);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [word, isImposter]);
 
   const handleToggleReveal = () => {
     sound.playCardFlip();
@@ -116,15 +134,45 @@ export const RoleCardScreen: React.FC<RoleCardScreenProps> = ({
               </div>
             </div>
           ) : (
-            /* CITIZEN: Only shows player no, player name, and the word in large with (short english explanation) */
-            <div className="py-6 space-y-3 animate-in fade-in zoom-in-95 duration-200">
-              <p className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-wide leading-tight">
-                {isEn ? word.wordEn : word.wordBn}
-              </p>
+            /* CITIZEN: Shows player no, player name, picture of the word, and the word in large with (short english explanation) */
+            <div className="py-3 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+              {/* Picture of the word */}
+              <div className="relative mx-auto w-44 h-44 sm:w-52 sm:h-52 rounded-2xl overflow-hidden shadow-md border-2 border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                {imageLoading ? (
+                  <div className="flex flex-col items-center justify-center space-y-2 text-slate-400">
+                    <div className="w-7 h-7 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-[11px] font-medium font-mono text-slate-500 dark:text-slate-400">
+                      {isEn ? 'Loading picture...' : 'ছবি লোড হচ্ছে...'}
+                    </span>
+                  </div>
+                ) : imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={word.wordEn}
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://images.unsplash.com/featured/?${encodeURIComponent(word.wordEn)}`;
+                    }}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center text-slate-400">
+                    <ImageIcon className="w-10 h-10 stroke-1" />
+                  </div>
+                )}
+                <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-slate-950/75 backdrop-blur-xs text-[10px] text-amber-400 font-mono flex items-center gap-1 shadow">
+                  <span>📸 {isEn ? 'Photo' : 'ছবি'}</span>
+                </div>
+              </div>
 
-              <p className="text-base sm:text-lg font-medium text-slate-500 dark:text-slate-400 font-mono">
-                ({explanation})
-              </p>
+              <div className="space-y-1">
+                <p className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-wide leading-tight">
+                  {isEn ? word.wordEn : word.wordBn}
+                </p>
+
+                <p className="text-sm sm:text-base font-medium text-slate-500 dark:text-slate-400 font-mono">
+                  ({explanation})
+                </p>
+              </div>
             </div>
           )}
         </div>
